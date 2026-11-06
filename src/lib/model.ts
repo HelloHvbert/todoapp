@@ -14,7 +14,14 @@ export type Task = {
   createdAt: number;
 };
 
-export type ShoppingItem = { id: string; name: string; done: boolean };
+export type ShoppingItem = {
+  id: string;
+  name: string;
+  done: boolean;
+  /** Optional amount, e.g. 2 with unit "kg". */
+  qty?: number;
+  unit?: string;
+};
 
 export type ShoppingList = {
   id: string;

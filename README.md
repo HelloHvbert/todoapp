@@ -14,6 +14,10 @@ Aplikacja mobilna (Expo SDK 58 / React Native, Expo Router) do zadań i list zak
 - **Zakupy** — listy zakupów z tytułem i (opcjonalną) datą. Odhaczasz produkty, a po
   **Zalicz listę** podajesz końcową kwotę z paragonu. Zaliczone listy pokazują cenę, a nagłówek
   sumuje wydatki z bieżącego miesiąca. Listę można otworzyć ponownie.
+  - **Ilości:** wpisz ilość z jednostką na początku lub końcu: `Mleko 2l`, `2 kg ziemniaki`, `Szynka 30 dag`,
+    `Jajka 10`, `Masło x2`, `Woda 1,5l`. Jednostki: szt., kg, dag/dkg, g, l, ml, op., paczka, puszka, butelka, pęczek.
+    Dodanie tego samego produktu z tą samą jednostką zwiększa ilość (`mleko 1l` do `Mleko 2 l` → `3 l`).
+    Dotknij produktu, aby zmienić nazwę, ilość (−/+) lub jednostkę.
 
 ## Zadania
 

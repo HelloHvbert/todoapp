@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { store as db } from './db';
 import type { Data } from './db-types';
 import { newId, ShoppingItem, ShoppingList, Task } from './model';
+import { parseItem, sameName } from './quantity';
 
 type State = Data & { loaded: boolean };
 
@@ -120,8 +121,22 @@ function updateItems(listId: string, fn: (items: ShoppingItem[]) => ShoppingItem
   if (list) updateList(listId, { items: fn(list.items) });
 }
 
-export function addItem(listId: string, name: string) {
-  updateItems(listId, (items) => [...items, { id: newId(), name, done: false }]);
+/** Adds "Mleko 2l"-style text; adding an open item with the same name and unit increases its quantity. */
+export function addItem(listId: string, text: string) {
+  const parsed = parseItem(text);
+  updateItems(listId, (items) => {
+    const unitOf = (i: { qty?: number; unit?: string }) => (i.qty == null ? 'szt.' : i.unit);
+    const match = items.find((i) => !i.done && sameName(i.name, parsed.name) && unitOf(i) === unitOf(parsed));
+    if (match) {
+      const qty = (match.qty ?? 1) + (parsed.qty ?? 1);
+      return items.map((i) => (i === match ? { ...i, qty, unit: unitOf(parsed) } : i));
+    }
+    return [...items, { id: newId(), name: parsed.name, qty: parsed.qty, unit: parsed.unit, done: false }];
+  });
+}
+
+export function updateItem(listId: string, itemId: string, patch: Partial<ShoppingItem>) {
+  updateItems(listId, (items) => items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)));
 }
 
 export function toggleItem(listId: string, itemId: string) {

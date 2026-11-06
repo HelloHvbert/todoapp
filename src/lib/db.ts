@@ -24,9 +24,25 @@ type ListRow = {
   final_price: number | null;
   created_at: number;
 };
-type ItemRow = { id: string; list_id: string; name: string; done: number };
+type ItemRow = { id: string; list_id: string; name: string; done: number; qty: number | null; unit: string | null };
 
 const u = <T,>(v: T | null): T | undefined => (v == null ? undefined : v);
+
+/** Schema changes after the first release, applied in order (PRAGMA user_version). */
+const MIGRATIONS = [
+  // 1: quantity and unit for shopping items
+  'ALTER TABLE items ADD COLUMN qty REAL; ALTER TABLE items ADD COLUMN unit TEXT;',
+];
+
+function migrate(d: SQLiteDatabase) {
+  const version = d.getFirstSync<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0;
+  for (let v = version; v < MIGRATIONS.length; v++) {
+    d.withTransactionSync(() => {
+      d.execSync(MIGRATIONS[v]);
+      d.execSync(`PRAGMA user_version = ${v + 1}`);
+    });
+  }
+}
 
 let conn: SQLiteDatabase | null = null;
 function db(): SQLiteDatabase {
@@ -65,6 +81,7 @@ function db(): SQLiteDatabase {
       CREATE INDEX IF NOT EXISTS items_list ON items (list_id);
       CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);
     `);
+    migrate(conn);
   }
   return conn;
 }
@@ -86,7 +103,10 @@ function writeList(l: ShoppingList) {
   );
   d.runSync('DELETE FROM items WHERE list_id = ?', l.id);
   l.items.forEach((i, pos) =>
-    d.runSync('INSERT INTO items (id, list_id, name, done, position) VALUES (?, ?, ?, ?, ?)', i.id, l.id, i.name, i.done ? 1 : 0, pos),
+    d.runSync(
+      'INSERT INTO items (id, list_id, name, done, position, qty, unit) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      i.id, l.id, i.name, i.done ? 1 : 0, pos, i.qty ?? null, i.unit ?? null,
+    ),
   );
 }
 
@@ -105,7 +125,7 @@ function readAll(): Data {
       createdAt: r.created_at,
     }),
   );
-  const items = d.getAllSync<ItemRow>('SELECT id, list_id, name, done FROM items ORDER BY position');
+  const items = d.getAllSync<ItemRow>('SELECT id, list_id, name, done, qty, unit FROM items ORDER BY position');
   const lists = d.getAllSync<ListRow>('SELECT * FROM lists ORDER BY created_at DESC').map(
     (r): ShoppingList => ({
       id: r.id,
@@ -114,7 +134,7 @@ function readAll(): Data {
       completedAt: u(r.completed_at),
       finalPrice: u(r.final_price),
       createdAt: r.created_at,
-      items: items.filter((i) => i.list_id === r.id).map((i) => ({ id: i.id, name: i.name, done: !!i.done })),
+      items: items.filter((i) => i.list_id === r.id).map((i) => ({ id: i.id, name: i.name, done: !!i.done, qty: u(i.qty), unit: u(i.unit) })),
     }),
   );
   return { tasks, lists };

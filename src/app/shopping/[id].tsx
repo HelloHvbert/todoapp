@@ -13,12 +13,14 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ItemEditor } from '@/components/ItemEditor';
 import { PickerField } from '@/components/PickerField';
 import { QuickAdd } from '@/components/QuickAdd';
 import { Button, Card, Checkbox, Empty, SectionTitle } from '@/components/ui';
 import { useColors } from '@/constants/theme';
 import { formatLong, formatPrice, parsePrice, todayKey } from '@/lib/dates';
-import { listProgress } from '@/lib/model';
+import { listProgress, ShoppingItem } from '@/lib/model';
+import { formatQty } from '@/lib/quantity';
 import {
   addItem,
   completeList,
@@ -26,6 +28,7 @@ import {
   deleteList,
   reopenList,
   toggleItem,
+  updateItem,
   updateList,
   useStore,
 } from '@/lib/store';
@@ -38,6 +41,7 @@ export default function ShoppingListScreen() {
   const list = lists.find((l) => l.id === id);
   const [priceOpen, setPriceOpen] = useState(false);
   const [price, setPrice] = useState('');
+  const [editing, setEditing] = useState<ShoppingItem | null>(null);
 
   if (!list) {
     return <View style={{ flex: 1, backgroundColor: c.bg }}>{loaded && <Empty title="Lista nie istnieje" />}</View>;
@@ -124,7 +128,7 @@ export default function ShoppingListScreen() {
 
         {!completed && (
           <View style={{ marginTop: 16 }}>
-            <QuickAdd placeholder="Dodaj produkt…" onSubmit={(name) => addItem(list.id, name)} color={c.shop} />
+            <QuickAdd placeholder="Dodaj produkt, np. Mleko 2l" onSubmit={(name) => addItem(list.id, name)} color={c.shop} />
           </View>
         )}
 
@@ -136,14 +140,27 @@ export default function ShoppingListScreen() {
             {sorted.map((item) => (
               <View key={item.id} style={[styles.item, { borderColor: c.border }]}>
                 <Checkbox checked={item.done} color={c.shop} onPress={() => !completed && toggleItem(list.id, item.id)} />
-                <Text
-                  style={[
-                    styles.itemText,
-                    { color: item.done ? c.muted : c.text },
-                    item.done && { textDecorationLine: 'line-through' },
-                  ]}>
-                  {item.name}
-                </Text>
+                <Pressable
+                  style={styles.itemMain}
+                  disabled={completed}
+                  onPress={() => setEditing(item)}
+                  accessibilityHint="Edytuj ilość i jednostkę">
+                  <Text
+                    style={[
+                      styles.itemText,
+                      { color: item.done ? c.muted : c.text },
+                      item.done && { textDecorationLine: 'line-through' },
+                    ]}>
+                    {item.name}
+                  </Text>
+                  {item.qty != null && (
+                    <View style={[styles.pill, { backgroundColor: item.done ? c.bg : c.shopSoft }]}>
+                      <Text style={{ color: item.done ? c.muted : c.shop, fontWeight: '700', fontSize: 13 }}>
+                        {formatQty(item.qty, item.unit)}
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
                 {!completed && (
                   <Pressable onPress={() => deleteItem(list.id, item.id)} hitSlop={10} accessibilityLabel="Usuń produkt">
                     <Text style={{ color: c.muted, fontSize: 18 }}>✕</Text>
@@ -164,6 +181,19 @@ export default function ShoppingListScreen() {
           <Button label="Zalicz listę" kind="shop" onPress={() => setPriceOpen(true)} />
         )}
       </View>
+
+      <ItemEditor
+        item={editing}
+        onClose={() => setEditing(null)}
+        onSave={(patch) => {
+          if (editing) updateItem(list.id, editing.id, patch);
+          setEditing(null);
+        }}
+        onDelete={() => {
+          if (editing) deleteItem(list.id, editing.id);
+          setEditing(null);
+        }}
+      />
 
       <Modal visible={priceOpen} transparent animationType="fade" onRequestClose={() => setPriceOpen(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.backdrop}>
@@ -203,7 +233,9 @@ const styles = StyleSheet.create({
   summary: { padding: 16, marginTop: 16, gap: 4, borderWidth: 1 },
   summaryPrice: { fontSize: 32, fontWeight: '800' },
   item: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: 16, borderBottomWidth: StyleSheet.hairlineWidth },
-  itemText: { flex: 1, fontSize: 16 },
+  itemMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  itemText: { flexShrink: 1, fontSize: 16 },
+  pill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, marginLeft: 'auto' },
   footer: { paddingHorizontal: 16, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 24 },
   dialog: { borderRadius: 20, padding: 20, gap: 14 },
