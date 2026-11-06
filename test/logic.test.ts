@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { addDays, dayCount, formatLong, formatPrice, monthGrid, parsePrice } from '../src/lib/dates.ts';
+import { addDays, dayCount, formatLong, formatPrice, monthGrid, parsePrice, plural } from '../src/lib/dates.ts';
 import { buildMarks, compareTasks, taskOnDay, type ShoppingList, type Task } from '../src/lib/model.ts';
 
 const task = (p: Partial<Task>): Task => ({ id: Math.random().toString(), title: 't', done: false, createdAt: 0, ...p });
@@ -60,4 +60,11 @@ test('compareTasks orders undone first, then by time', () => {
   const b = task({ title: 'b', startTime: '10:00' });
   const c = task({ title: 'c' });
   assert.deepEqual([a, b, c].sort(compareTasks).map((t) => t.title), ['c', 'b', 'a']);
+});
+
+test('polish plurals', () => {
+  const p = (n: number) => plural(n, 'zadanie', 'zadania', 'zadań');
+  assert.deepEqual([0, 1, 2, 4, 5, 12, 22, 25, 112].map(p), [
+    '0 zadań', '1 zadanie', '2 zadania', '4 zadania', '5 zadań', '12 zadań', '22 zadania', '25 zadań', '112 zadań',
+  ]);
 });

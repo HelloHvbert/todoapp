@@ -98,3 +98,9 @@ export function parsePrice(input: string): number | null {
   if (!/^\d+(\.\d{0,2})?$/.test(cleaned)) return null;
   return Math.round(Number(cleaned) * 100) / 100;
 }
+
+/** Polish plural: plural(1, 'zadanie', 'zadania', 'zadań'). */
+export function plural(n: number, one: string, few: string, many: string): string {
+  const word = n === 1 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? few : many;
+  return `${n} ${word}`;
+}

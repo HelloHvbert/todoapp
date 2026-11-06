@@ -1,7 +1,21 @@
+import { ReactNode } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/constants/theme';
 
-export function Header({ title, subtitle, onAdd, addColor }: { title: string; subtitle?: string; onAdd?: () => void; addColor?: string }) {
+export function Header({
+  title,
+  subtitle,
+  onAdd,
+  addColor,
+  extra,
+}: {
+  title: string;
+  subtitle?: string;
+  onAdd?: () => void;
+  addColor?: string;
+  /** Rendered before the + button. */
+  extra?: ReactNode;
+}) {
   const c = useColors();
   return (
     <View style={styles.row}>
@@ -9,6 +23,7 @@ export function Header({ title, subtitle, onAdd, addColor }: { title: string; su
         <Text style={[styles.title, { color: c.text }]}>{title}</Text>
         {subtitle ? <Text style={[styles.subtitle, { color: c.muted }]}>{subtitle}</Text> : null}
       </View>
+      {extra}
       {onAdd && (
         <Pressable
           onPress={onAdd}

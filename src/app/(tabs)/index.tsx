@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BackupButton } from '@/components/BackupButton';
 import { Header } from '@/components/Header';
 import { QuickAdd } from '@/components/QuickAdd';
 import { ShoppingRow } from '@/components/ShoppingRow';
@@ -40,6 +41,7 @@ export default function TodayScreen() {
           title="Dziś"
           subtitle={todays.length ? `${subtitle} · ${left ? `zostało ${left}` : 'wszystko zrobione 🎉'}` : subtitle}
           onAdd={() => router.push({ pathname: '/task', params: { date: today } })}
+          extra={<BackupButton />}
         />
         <QuickAdd placeholder="Dodaj zadanie na dziś…" onSubmit={(title) => addTask({ title, startDate: today })} />
 
